@@ -2,6 +2,30 @@ from telegram.ext import Updater, CommandHandler
 from token_api import token_api, yt_key
 from httpx import get
 from time import sleep
+from sqlite3 import connect
+from random import randint
+
+db = connect('database.sqlite')
+
+
+cursor = db.cursor()
+
+
+def charada(update, context):
+    n = randint(1, 1816)
+    query = cursor.execute(f'select pergunta from charadas where id={n}')
+    return f"""
+    ID da sua charada: {n}
+
+    {query.fetchone()[0]}
+    """
+
+
+def resposta_charada(update, context):
+    query = cursor.execute(
+        f'select resposta from charadas where id={context.args[0]}'
+    )
+    return query.fetchone()[0]
 
 
 def git_api_user(user):
@@ -27,7 +51,9 @@ def gen_charadas():
 
 
 def hello(update, context):
-    update.message.reply_text("Hello {}".format(update.message.from_user.first_name))
+    update.message.reply_text(
+        "Hello {}".format(update.message.from_user.first_name)
+    )
 
 
 def get_git_user(update, context):
@@ -50,6 +76,8 @@ updater = Updater(token_api, use_context=True)
 updater.dispatcher.add_handler(CommandHandler("hello", hello))
 updater.dispatcher.add_handler(CommandHandler("git", get_git_user))
 updater.dispatcher.add_handler(CommandHandler("subs", get_yt_subs))
+updater.dispatcher.add_handler(CommandHandler("charada_2", charada))
+updater.dispatcher.add_handler(CommandHandler("resposta", resposta_charada))
 updater.dispatcher.add_handler(CommandHandler("charada", get_charadas))
 
 updater.start_polling()
