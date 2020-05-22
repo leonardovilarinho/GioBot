@@ -1,7 +1,7 @@
 from telegram.ext import Updater, CommandHandler
 from token_api import token_api, yt_key
 from httpx import get
-
+from time import sleep
 from sqlite3 import connect
 from random import randint
 
@@ -41,6 +41,15 @@ def yt_api_subs():
     return msg
 
 
+def gen_charadas():
+    headers = {"Accept": "application/json"}
+    res = get(
+        "https://us-central1-kivson.cloudfunctions.net/charada-aleatoria",
+        headers=headers,
+    ).json()
+    return res
+
+
 def hello(update, context):
     update.message.reply_text(
         "Hello {}".format(update.message.from_user.first_name)
@@ -51,19 +60,25 @@ def get_git_user(update, context):
     update.message.reply_text(git_api_user(context.args[0]))
 
 
+def get_charadas(update, context):
+    msg = gen_charadas()
+    update.message.reply_text(msg["pergunta"])
+    sleep(10)
+    update.message.reply_text(msg["resposta"])
+
+
 def get_yt_subs(update, context):
     update.message.reply_text(yt_api_subs())
 
-
-# /git devgiordane
 
 updater = Updater(token_api, use_context=True)
 
 updater.dispatcher.add_handler(CommandHandler("hello", hello))
 updater.dispatcher.add_handler(CommandHandler("git", get_git_user))
 updater.dispatcher.add_handler(CommandHandler("subs", get_yt_subs))
-updater.dispatcher.add_handler(CommandHandler("charada", charada))
+updater.dispatcher.add_handler(CommandHandler("charada_2", charada))
 updater.dispatcher.add_handler(CommandHandler("resposta", resposta_charada))
+updater.dispatcher.add_handler(CommandHandler("charada", get_charadas))
 
 updater.start_polling()
 updater.idle()
