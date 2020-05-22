@@ -1,31 +1,15 @@
 from telegram.ext import Updater, CommandHandler
-from token_api import token_api, yt_key
 from httpx import get
 from time import sleep
 from sqlite3 import connect
 from random import randint
+import os
 
-db = connect('database.sqlite')
+from dotenv import load_dotenv
 
-
-cursor = db.cursor()
-
-
-def charada(update, context):
-    n = randint(1, 1816)
-    query = cursor.execute(f'select pergunta from charadas where id={n}')
-    return f"""
-    ID da sua charada: {n}
-
-    {query.fetchone()[0]}
-    """
-
-
-def resposta_charada(update, context):
-    query = cursor.execute(
-        f'select resposta from charadas where id={context.args[0]}'
-    )
-    return query.fetchone()[0]
+load_dotenv()
+token_api = os.getenv("TELEGRAM_TOKEN")
+yt_key = os.getenv("YT_API")
 
 
 def git_api_user(user):
@@ -51,13 +35,15 @@ def gen_charadas():
 
 
 def hello(update, context):
-    update.message.reply_text(
-        "Hello {}".format(update.message.from_user.first_name)
-    )
+    update.message.reply_text("Hello {}".format(update.message.from_user.first_name))
 
 
 def get_git_user(update, context):
     update.message.reply_text(git_api_user(context.args[0]))
+
+
+def get_yt_subs(update, context):
+    update.message.reply_text(yt_api_subs())
 
 
 def get_charadas(update, context):
@@ -67,17 +53,40 @@ def get_charadas(update, context):
     update.message.reply_text(msg["resposta"])
 
 
-def get_yt_subs(update, context):
-    update.message.reply_text(yt_api_subs())
+def gen_charadax():
+    with connect("database.sqlite") as db:
+        cursor = db.cursor()
+        n = randint(1, 1816)
+        query = cursor.execute(f"select pergunta from charadas where id={n}")
+    return f"ID da sua charada: {n}\n{query.fetchone()[0]}"
+
+
+def resposta_charada(id):
+    with connect("database.sqlite") as db:
+        cursor = db.cursor()
+        query = cursor.execute(f"select resposta from charadas where id={id}")
+    return f"{query.fetchone()[0]}"
+
+
+def charada(update, context):
+    update.message.reply_text(gen_charadax())
+
+
+def res_charada(update, context):
+    update.message.reply_text(resposta_charada(context.args[0]))
 
 
 updater = Updater(token_api, use_context=True)
 
+updater.dispatcher.add_handler(
+    CommandHandler("charadax", charada)
+)  # Erro de Trhead do SQLite
+updater.dispatcher.add_handler(
+    CommandHandler("resposta", res_charada)
+)  # Erro de Trhead do SQLite
 updater.dispatcher.add_handler(CommandHandler("hello", hello))
 updater.dispatcher.add_handler(CommandHandler("git", get_git_user))
 updater.dispatcher.add_handler(CommandHandler("subs", get_yt_subs))
-updater.dispatcher.add_handler(CommandHandler("charada_2", charada))
-updater.dispatcher.add_handler(CommandHandler("resposta", resposta_charada))
 updater.dispatcher.add_handler(CommandHandler("charada", get_charadas))
 
 updater.start_polling()
