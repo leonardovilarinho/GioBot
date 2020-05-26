@@ -1,93 +1,55 @@
 from telegram.ext import Updater, CommandHandler
-from httpx import get
 from time import sleep
-from sqlite3 import connect
-from random import randint
-import os
-
-from dotenv import load_dotenv
-
-load_dotenv()
-token_api = os.getenv("TELEGRAM_TOKEN")
-yt_key = os.getenv("YT_API")
-
-
-def git_api_user(user):
-    res = get(f"https://api.github.com/users/{user}").json()
-    msg = f"{res['name']}\n Repos: {res['public_repos']}\n  {res['html_url']} \n Gits: {res['public_gists']}\n  Seguidores: {res['followers']}\n Seguindo: {res['following']}\n {res['blog']}\n :information_source: {res['bio']} \n {res['location']}"
-    return msg
-
-
-def yt_api_subs():
-    url = f"https://www.googleapis.com/youtube/v3/channels?part=statistics&id=UCANI94YmcIGmabIDPx5oHYg&fields=items/statistics/subscriberCount&key={yt_key}"
-    res = get(url).json()
-    msg = f"Opa Dev_, já somos mais de {res['items'][0]['statistics']['subscriberCount']}\nMuito obrigado por fazer parte disso <3"
-    return msg
-
-
-def gen_charadas():
-    headers = {"Accept": "application/json"}
-    res = get(
-        "https://us-central1-kivson.cloudfunctions.net/charada-aleatoria",
-        headers=headers,
-    ).json()
-    return res
+from youtube_api import get_subs
+from token_api import token_api, yt_key
+from git import git_api_user
+from charada import charada
+from ranking import ranking
 
 
 def hello(update, context):
-    update.message.reply_text("Hello {}".format(update.message.from_user.first_name))
+    update.message.reply_text(
+        f"Opa dev_ {update.message.from_user.first_name}, que legal te ver por aqui :)"
+    )
 
 
 def get_git_user(update, context):
-    update.message.reply_text(git_api_user(context.args[0]))
+    update.message.reply_text(git_api_user.get_info(context.args[0]))
 
 
 def get_yt_subs(update, context):
-    update.message.reply_text(yt_api_subs())
+    update.message.reply_text(get_subs.get_subs())
 
 
-def get_charadas(update, context):
-    msg = gen_charadas()
+# TODO TORNAR O RANKING DINAMICO, E ATUALIZAR ELE, SEMPRE QUE O /GIT FOR CHAMADO
+def get_ranking(update, context):
+    update.message.reply_text(ranking.gen_ranking())
+
+
+def get_charada(update, context):
+    msg = charada.gen_charada()
     update.message.reply_text(msg["pergunta"])
     sleep(10)
     update.message.reply_text(msg["resposta"])
 
 
-def gen_charadax():
-    with connect("database.sqlite") as db:
-        cursor = db.cursor()
-        n = randint(1, 1816)
-        query = cursor.execute(f"select pergunta from charadas where id={n}")
-    return f"ID da sua charada: {n}\n{query.fetchone()[0]}"
+# def charada(update, context):
+#     update.message.reply_text(gen_charadax())
 
 
-def resposta_charada(id):
-    with connect("database.sqlite") as db:
-        cursor = db.cursor()
-        query = cursor.execute(f"select resposta from charadas where id={id}")
-    return f"{query.fetchone()[0]}"
-
-
-def charada(update, context):
-    update.message.reply_text(gen_charadax())
-
-
-def res_charada(update, context):
-    update.message.reply_text(resposta_charada(context.args[0]))
+# def res_charada(update, context):
+#     update.message.reply_text(resposta_charada(context.args[0]))
 
 
 updater = Updater(token_api, use_context=True)
 
-updater.dispatcher.add_handler(
-    CommandHandler("charadax", charada)
-)  # Erro de Trhead do SQLite
-updater.dispatcher.add_handler(
-    CommandHandler("resposta", res_charada)
-)  # Erro de Trhead do SQLite
+# updater.dispatcher.add_handler(CommandHandler("charadax", charada))
+# updater.dispatcher.add_handler(CommandHandler("resposta", res_charada))
 updater.dispatcher.add_handler(CommandHandler("hello", hello))
 updater.dispatcher.add_handler(CommandHandler("git", get_git_user))
 updater.dispatcher.add_handler(CommandHandler("subs", get_yt_subs))
-updater.dispatcher.add_handler(CommandHandler("charada", get_charadas))
+updater.dispatcher.add_handler(CommandHandler("charada", get_charada))
+updater.dispatcher.add_handler(CommandHandler("ranking_git", get_ranking))
 
 updater.start_polling()
 updater.idle()

@@ -8,7 +8,7 @@ verify_ssl = true
 [packages]
 python-telegram-bot = "*"
 httpx = "*"
-python-dotenv = "*"
+firebase-admin = "*"
 
 [requires]
 python_version = "3.8"
