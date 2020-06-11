@@ -1,3 +1,4 @@
 token_api.py
 __pycache__
 .vscode
+*firebase*.json

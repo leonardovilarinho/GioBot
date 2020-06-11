@@ -49,7 +49,7 @@ updater.dispatcher.add_handler(CommandHandler("hello", hello))
 updater.dispatcher.add_handler(CommandHandler("git", get_git_user))
 updater.dispatcher.add_handler(CommandHandler("subs", get_yt_subs))
 updater.dispatcher.add_handler(CommandHandler("charada", get_charada))
-updater.dispatcher.add_handler(CommandHandler("ranking_git", get_ranking))
+updater.dispatcher.add_handler(CommandHandler("ranking", get_ranking))
 
 updater.start_polling()
 updater.idle()
